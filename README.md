@@ -1,13 +1,23 @@
-# video-slide-extractor
+# video-slide-extractor - Extract Slides from Video with JavaScript
 
-Detect **slide and scene changes** in a video by frame differencing. Pure
-functions, **zero dependencies**, runs in the browser or in Node. Give it
-frames, get back the indices where a new slide begins.
+Detect **slide changes, scene cuts, and presentation transitions** in video
+frames with JavaScript. Use it to build video-to-PowerPoint, lecture-to-slides,
+screen-recording-to-PPT, and browser-based slide extraction tools.
+
+The package is pure functions, **zero dependencies**, and runs in the browser or
+in Node. Give it frames, get back the indices where a new slide begins.
 
 This is the open core of **[Video2Any](https://video2any.com)** — a tool that
 turns videos, screen recordings, and meeting recordings into editable
 PowerPoint decks, PDFs, and subtitles, entirely in your browser (your files
 never leave your machine).
+
+## When to use it
+
+- Extract slides from lecture recordings, webinars, and conference talks.
+- Detect presentation changes in screen recordings or meeting recordings.
+- Build a video-to-PowerPoint, video-to-PDF, or video-to-Google-Slides pipeline.
+- Find scene changes without sending private videos to an AI or cloud API.
 
 ## Install
 
@@ -64,6 +74,13 @@ import { extractSlideIndices } from 'video-slide-extractor';
 const keep = extractSlideIndices(frames, 160, 90);
 console.log('new slide at sample #', keep); // e.g. [0, 4, 9, 15]
 ```
+
+## Guides
+
+- [How to extract slides from a video in JavaScript](docs/extract-slides-from-video.md)
+- [How video to PowerPoint conversion works](docs/video-to-powerpoint.md)
+- [Detect slide changes in screen recordings](docs/screen-recording-to-slides.md)
+- [Frame differencing vs AI for slide extraction](docs/frame-differencing-vs-ai.md)
 
 ## API
 
