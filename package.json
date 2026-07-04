@@ -1,0 +1,36 @@
+{
+  "name": "video-slide-extractor",
+  "version": "0.1.0",
+  "description": "Detect slide and scene changes in a video by frame differencing — the open core behind Video2Any. Zero dependencies, runs in the browser or Node.",
+  "type": "module",
+  "main": "index.js",
+  "exports": "./index.js",
+  "sideEffects": false,
+  "keywords": [
+    "video",
+    "slides",
+    "powerpoint",
+    "pptx",
+    "frame-diff",
+    "screen-recording",
+    "keyframe",
+    "scene-detection",
+    "slide-extraction"
+  ],
+  "author": "Video2Any",
+  "license": "MIT",
+  "homepage": "https://video2any.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/larry-xue/video-slide-extractor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/larry-xue/video-slide-extractor/issues"
+  },
+  "files": [
+    "index.js",
+    "example.mjs",
+    "README.md",
+    "LICENSE"
+  ]
+}
