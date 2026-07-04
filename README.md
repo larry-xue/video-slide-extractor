@@ -82,6 +82,10 @@ console.log('new slide at sample #', keep); // e.g. [0, 4, 9, 15]
 - [Detect slide changes in screen recordings](docs/screen-recording-to-slides.md)
 - [Frame differencing vs AI for slide extraction](docs/frame-differencing-vs-ai.md)
 
+## Related resources
+
+- [Awesome Video to Slides](https://github.com/larry-xue/awesome-video-to-slides) - Curated tools and libraries for converting videos, lectures, webinars, and screen recordings into slides, PowerPoint, PDFs, and notes.
+
 ## API
 
 ### `frameDiff(a, b, width, height, opts?) → { ratio, isNewSlide }`
