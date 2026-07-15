@@ -7,6 +7,10 @@ screen-recording-to-PPT, and browser-based slide extraction tools.
 The package is pure functions, **zero dependencies**, and runs in the browser or
 in Node. Give it frames, get back the indices where a new slide begins.
 
+It is a **change detector**, not a complete converter: it does not decode video,
+capture clean export frames, remove non-consecutive duplicates, run OCR, or
+write PowerPoint files. Those stages belong in the surrounding pipeline.
+
 This is the open core of **[Video2Any](https://video2any.com)** — a tool that
 turns videos, screen recordings, and meeting recordings into editable
 PowerPoint decks, PDFs, and subtitles, entirely in your browser (your files
@@ -81,6 +85,22 @@ console.log('new slide at sample #', keep); // e.g. [0, 4, 9, 15]
 - [How video to PowerPoint conversion works](docs/video-to-powerpoint.md)
 - [Detect slide changes in screen recordings](docs/screen-recording-to-slides.md)
 - [Frame differencing vs AI for slide extraction](docs/frame-differencing-vs-ai.md)
+- [How to evaluate a slide-change detector](docs/evaluation.md)
+
+## Capability boundary
+
+| Stage | This package | A complete converter still needs |
+| --- | --- | --- |
+| Decode/sample video | No | `<video>`/WebCodecs, FFmpeg, or another decoder |
+| Detect consecutive visual changes | Yes | Feed ordered, equally sized RGBA frames |
+| Collapse fades/builds | No | Temporal post-processing |
+| Find a slide shown earlier | No | Global perceptual deduplication |
+| Capture export-quality images | No | Seek/recapture at source resolution |
+| Produce PPTX/PDF/OCR/notes | No | Document, OCR, and transcription layers |
+
+This boundary matters when comparing "video to PowerPoint" tools: slide-change
+detection, original-slide recovery, and generating a new deck from a transcript
+are related but different tasks.
 
 ## Related resources
 
@@ -107,6 +127,11 @@ start a new slide.
 | `blockSize`    | `8`     | px per block edge, at the diff resolution              |
 | `blockDelta`   | `14`    | mean \|ΔRGB\| per channel for a block to count changed |
 | `changedRatio` | `0.02`  | fraction of changed blocks that flags a new slide      |
+
+The defaults are starting points, not universal accuracy claims. Sampling
+interval, codec noise, transitions, animations, camera overlays, and crop area
+all affect results. Report the complete configuration when publishing a
+benchmark; the [evaluation guide](docs/evaluation.md) provides a shared format.
 
 ## What's not in here
 

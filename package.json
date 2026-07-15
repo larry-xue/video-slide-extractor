@@ -1,11 +1,24 @@
 {
   "name": "video-slide-extractor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Detect slide and scene changes in a video by frame differencing — the open core behind Video2Any. Zero dependencies, runs in the browser or Node.",
   "type": "module",
   "main": "index.js",
-  "exports": "./index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
   "sideEffects": false,
+  "scripts": {
+    "test": "node --test && npm run test:types",
+    "test:types": "tsc --noEmit -p test/tsconfig.json",
+    "example": "node example.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
   "keywords": [
     "video",
     "slides",
@@ -16,7 +29,10 @@
     "lecture-to-slides",
     "screen-recording-to-slides",
     "frame-diff",
+    "frame-differencing",
     "screen-recording",
+    "webinar-to-slides",
+    "presentation",
     "keyframe",
     "scene-detection",
     "slide-extraction",
@@ -35,9 +51,15 @@
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "example.mjs",
+    "test",
     "docs",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
 }
