@@ -16,6 +16,19 @@ turns videos, screen recordings, and meeting recordings into editable
 PowerPoint decks, PDFs, and subtitles, entirely in your browser (your files
 never leave your machine).
 
+## See it working
+
+- **Live demo** — drop any video into the
+  [MP4 to PPT converter](https://video2any.com/tools/mp4-to-ppt); the
+  detection stage is this algorithm.
+- **Real output** — a full MIT lecture recording (6.0001, "What is
+  Computation?") went in, and
+  [46 extracted slides](https://video2any.com/decks/mit-what-is-computation)
+  came out — browsable online, with a
+  [downloadable sample .pptx](https://video2any.com/decks/mit-what-is-computation/video2any-sample.pptx).
+- **Benchmark** — fixed-interval capture vs naive pixel diff vs this detector,
+  on fixtures with construction-exact ground truth: [bench/](bench/README.md).
+
 ## When to use it
 
 - Extract slides from lecture recordings, webinars, and conference talks.
@@ -43,6 +56,16 @@ ignores compression noise.
    absorbs the per-pixel noise a lossy codec introduces.
 4. If the **fraction of changed blocks** exceeds `changedRatio`, this frame
    starts a new slide.
+
+```mermaid
+flowchart LR
+    V[Video] -->|sample every N s| F[Frame<br/>160×90 RGBA]
+    F --> B[8×8 blocks<br/>mean abs diff vs last kept]
+    B --> C{"changed blocks<br/>&gt; changedRatio?"}
+    C -->|yes| K[Keep frame =<br/>new slide starts]
+    K -->|becomes reference| B
+    C -->|no| D[Drop frame]
+```
 
 ## Usage
 
@@ -86,6 +109,25 @@ console.log('new slide at sample #', keep); // e.g. [0, 4, 9, 15]
 - [Detect slide changes in screen recordings](docs/screen-recording-to-slides.md)
 - [Frame differencing vs AI for slide extraction](docs/frame-differencing-vs-ai.md)
 - [How to evaluate a slide-change detector](docs/evaluation.md)
+
+## How it compares — measured
+
+`bench/` renders videos from known slide sequences (ground truth exact by
+construction, no manual labeling) and scores three approaches under one frozen
+sampling setup. Headline numbers from the 46-slide MIT deck fixture:
+
+| Method | clean F1 | noisy F1 | overlay F1 |
+| --- | --- | --- | --- |
+| Fixed interval (10 s) | 0.68 | 0.68 | 0.68 |
+| Naive pixel diff (2%) | 0.94 | 0.94 | 0.91 |
+| **Block diff (this package, defaults)** | **0.97** | **0.97** | 0.54 |
+| Block diff (`changedRatio: 0.10`) | 0.89 | 0.89 | **0.93** |
+
+Two honest takeaways: block averaging wins on clean and compressed input, and
+the default `changedRatio` floods on a persistent webcam overlay — thresholds
+are inputs to report, not constants (the full product auto-calibrates and
+masks; see below). Full tables, scripts, and methodology:
+[bench/README.md](bench/README.md) · [bench/RESULTS.md](bench/RESULTS.md).
 
 ## Capability boundary
 
