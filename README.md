@@ -135,6 +135,8 @@ masks; see below). Full tables, scripts, and methodology:
 | --- | --- | --- |
 | Decode/sample video | No | `<video>`/WebCodecs, FFmpeg, or another decoder |
 | Detect consecutive visual changes | Yes | Feed ordered, equally sized RGBA frames |
+| Ignore a webcam bubble / cursor / logo | Yes | Calibrate on a set of sample frames first |
+| Pick a threshold for this footage | Yes | Calibrate on a set of sample frames first |
 | Collapse fades/builds | No | Temporal post-processing |
 | Find a slide shown earlier | No | Global perceptual deduplication |
 | Capture export-quality images | No | Seek/recapture at source resolution |
@@ -162,6 +164,59 @@ slide and becomes the new reference. The first frame is always kept.
 Run the detector over an ordered array of frames; return the indices that
 start a new slide.
 
+### `buildActivityMask(frames, width, height, opts?) → Uint8Array | null`
+One byte per block, `1` meaning "leave this block out". Blocks that change in
+more than `activeFrac` (default `0.5`) of consecutive frame pairs are a webcam
+overlay, cursor, logo animation, or embedded video — not slide content.
+
+Returns `null` when there is nothing to mask, when there are fewer than 8
+frames, or when the mask would cover more than `maxMaskFrac` (default `0.35`)
+of the frame. That last case is the point: **if most of the picture is moving,
+the moving part is the subject**, and masking it would hide the changes you are
+looking for.
+
+### `calibrateThreshold(ratios, opts?) → number | null`
+1-D Otsu split between the "same slide" noise cluster and the "slide changed"
+cluster. Returns `null` when the distribution is not bimodal enough to trust —
+act on the fallback, not on a split that is really just noise.
+
+### `chooseThreshold(ratios, opts?) → { changedRatio, mode }`
+`calibrateThreshold` with the fallbacks handled, over three regimes. `mode`
+tells you which one it decided on:
+
+| mode | footage | threshold |
+| --- | --- | --- |
+| `bimodal` | a slide deck with a clean gap between clusters | the Otsu split |
+| `static` | one slide and noise the whole way through | the default |
+| `motion` | talking head / camera footage, everything moves | median + 2·MAD |
+| `default` | fewer than 6 ratios — cannot classify | the default |
+
+The `motion` case is why one fixed number does not work: on footage where every
+sampled pair changes, `0.02` makes every frame a slide.
+
+### `analyzeSamples(frames, width, height, opts?) → { mask, choice }`
+Runs both of the above over a set of sample frames and returns what to detect
+with. **This is the function most callers want.**
+
+The mask is only kept when masking turns the video back into deck-like content
+(`bimodal` or `static`) — that is the webcam-overlay-on-slides case. On genuine
+motion footage the always-moving region *is* the subject, so the mask is
+discarded even though one could be built.
+
+```js
+import { analyzeSamples, createSlideDetector } from 'video-slide-extractor';
+
+const { mask, choice } = analyzeSamples(sampleFrames, W, H);
+const detect = createSlideDetector(W, H, { mask, changedRatio: choice.changedRatio });
+```
+
+Or in one call, when the frames you want indices for are also the frames to
+calibrate on:
+
+```js
+extractSlideIndices(frames, W, H, { calibrate: true });
+```
+
 ### Options
 
 | option         | default | meaning                                                |
@@ -169,6 +224,8 @@ start a new slide.
 | `blockSize`    | `8`     | px per block edge, at the diff resolution              |
 | `blockDelta`   | `14`    | mean \|ΔRGB\| per channel for a block to count changed |
 | `changedRatio` | `0.02`  | fraction of changed blocks that flags a new slide      |
+| `mask`         | none    | blocks to leave out of scoring — see `buildActivityMask` |
+| `collect`      | `false` | `frameDiff` only: also return per-block `flags`        |
 
 The defaults are starting points, not universal accuracy claims. Sampling
 interval, codec noise, transitions, animations, camera overlays, and crop area
@@ -177,17 +234,18 @@ benchmark; the [evaluation guide](docs/evaluation.md) provides a shared format.
 
 ## What's not in here
 
-This module is deliberately the *simple* core. The full **Video2Any** pipeline
-adds the parts that make it robust on real, messy recordings:
+This is a change detector. The full **Video2Any** pipeline adds the stages
+around it:
 
-- **Auto-threshold calibration** (1-D Otsu) that finds the split between the
-  "same slide" noise and the "slide changed" signal per video, instead of a
-  fixed `changedRatio`.
-- **Activity masking** that excludes a webcam bubble, logo, or animated region
-  so a moving talking-head corner doesn't fire on every frame.
 - **Transition collapse & global dedup** — a fade caught mid-transition settles
   onto the clean frame, and a presenter jumping back to an earlier slide is
-  recognized as a duplicate.
+  recognized as a duplicate. Global dedup in particular has to see the whole
+  video at once, which is a pipeline job, not a detector one.
+- **Slide density control** — raising the threshold when a span is producing
+  more slides than the caller asked for, without ever lowering it to reach a
+  target (that would invent slides that are not there).
+- **Decode and sampling** — WebCodecs, seek strategy, and recapture at source
+  resolution for export-quality images.
 - **Export** to `.pptx`, PDF, image frames, and `.srt` subtitles — all in the
   browser.
 
