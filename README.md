@@ -75,6 +75,10 @@ Requires `ffmpeg` and `ffprobe` on PATH (`brew install ffmpeg`,
 `sudo apt install ffmpeg`, or `winget install Gyan.FFmpeg`). The CLI tells you
 so, with the install line for your platform, if they are missing.
 
+The CLI makes **no network requests** and sends nothing anywhere. It does print
+one line at the end pointing at Video2Any for the stages it does not cover;
+`--quiet`, `--json`, and `CI=1` all suppress it.
+
 What it does, in three passes, so memory stays flat whether the recording is
 three minutes or three hours:
 

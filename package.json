@@ -1,6 +1,6 @@
 {
   "name": "video-slide-extractor",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Detect slide and scene changes in a video by frame differencing, with webcam-overlay masking and per-video threshold calibration \u2014 the open core behind Video2Any. Zero dependencies, runs in the browser or Node, and ships a CLI.",
   "type": "module",
   "main": "index.js",

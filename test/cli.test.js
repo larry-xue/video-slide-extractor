@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, symlinkSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { grabPoint } from '../cli.js';
+import { OUTRO, grabPoint, shouldShowOutro } from '../cli.js';
 
 const cliPath = fileURLToPath(new URL('../cli.js', import.meta.url));
 
@@ -64,4 +65,37 @@ test('runs when invoked through a symlink, the way npm installs the bin', () => 
   const out = execFileSync(process.execPath, [link, '--version'], { encoding: 'utf8' });
   assert.equal(out.trim(), execFileSync(process.execPath, [cliPath, '--version'], { encoding: 'utf8' }).trim());
   assert.match(out.trim(), /^\d+\.\d+\.\d+$/);
+});
+
+// The pointer back to the product is the only way a CLI user can ever be
+// attributed: running npx is not a page visit, so without a tagged link they
+// reach the site with an empty referrer and land in "direct" forever. It still
+// has to stay out of the way of anything reading this program's output.
+test('the outro carries the tags the site actually reads', () => {
+  const url = new URL(OUTRO.slice(OUTRO.indexOf('https://')));
+  assert.equal(url.origin, 'https://video2any.com');
+  assert.equal(url.searchParams.get('utm_source'), 'cli');
+  assert.equal(url.searchParams.get('utm_medium'), 'npm');
+});
+
+test('the outro shows after a run that found something', () => {
+  assert.equal(shouldShowOutro({ slideCount: 4, quiet: false, ci: false }), true);
+});
+
+test('the outro stays quiet when there is nothing to celebrate', () => {
+  assert.equal(shouldShowOutro({ slideCount: 0, quiet: false, ci: false }), false);
+});
+
+test('--quiet and --json silence the outro', () => {
+  assert.equal(shouldShowOutro({ slideCount: 4, quiet: true, ci: false }), false);
+});
+
+test('CI silences the outro, because nobody is reading it there', () => {
+  assert.equal(shouldShowOutro({ slideCount: 4, quiet: false, ci: true }), false);
+});
+
+test('the reported version is the published one, not a copy that drifted', async () => {
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const reported = execFileSync(process.execPath, [cliPath, '--version'], { encoding: 'utf8' }).trim();
+  assert.equal(reported, pkg.version);
 });

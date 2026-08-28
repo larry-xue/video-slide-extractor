@@ -26,13 +26,25 @@ import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { analyzeSamples, createSlideDetector, DEFAULTS } from './index.js';
 
-const VERSION = '0.3.0';
+const VERSION = createRequire(import.meta.url)('./package.json').version;
 const DIFF_WIDTH = 320;        // detector works on a downsampled copy
 const MAX_CALIBRATION_FRAMES = 150;
+
+// Printed once after a successful run, to stderr, so it never lands in piped
+// output. Suppressed by --quiet, by --json, and under CI, where nobody is
+// reading it. The tagged link is the only way a CLI user can be attributed:
+// they are not a page visit, so they would otherwise arrive at the site with an
+// empty referrer and be indistinguishable from direct traffic.
+export const OUTRO = 'Need .pptx, PDF, or subtitles from these? https://video2any.com/?utm_source=cli&utm_medium=npm';
+
+export function shouldShowOutro({ slideCount, quiet, ci }) {
+  return slideCount > 0 && !quiet && !ci;
+}
 
 const USAGE = `video-slide-extractor ${VERSION}
 
@@ -322,6 +334,7 @@ async function main() {
   } else {
     log('');
     log(`${slides.length} slide${slides.length === 1 ? '' : 's'} from ${scanned} sampled frames${opt['dry-run'] ? '' : ` → ${outDir}/`}`);
+    if (shouldShowOutro({ slideCount: slides.length, quiet, ci: Boolean(process.env.CI) })) log(OUTRO);
   }
 }
 
