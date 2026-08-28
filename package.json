@@ -1,7 +1,7 @@
 {
   "name": "video-slide-extractor",
-  "version": "0.2.0",
-  "description": "Detect slide and scene changes in a video by frame differencing, with webcam-overlay masking and per-video threshold calibration — the open core behind Video2Any. Zero dependencies, runs in the browser or Node.",
+  "version": "0.3.0",
+  "description": "Detect slide and scene changes in a video by frame differencing, with webcam-overlay masking and per-video threshold calibration \u2014 the open core behind Video2Any. Zero dependencies, runs in the browser or Node, and ships a CLI.",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
@@ -12,12 +12,16 @@
       "default": "./index.js"
     }
   },
+  "bin": {
+    "video-slide-extractor": "./cli.js"
+  },
   "sideEffects": false,
   "scripts": {
     "test": "node --test && npm run test:types",
     "test:types": "tsc --noEmit -p test/tsconfig.json",
     "example": "node example.mjs",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "cli": "node cli.js"
   },
   "keywords": [
     "video",
@@ -37,7 +41,10 @@
     "scene-detection",
     "slide-extraction",
     "javascript",
-    "browser"
+    "browser",
+    "cli",
+    "ffmpeg",
+    "command-line"
   ],
   "author": "Video2Any",
   "license": "MIT",
@@ -52,6 +59,7 @@
   "files": [
     "index.js",
     "index.d.ts",
+    "cli.js",
     "example.mjs",
     "test",
     "docs",

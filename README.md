@@ -7,9 +7,15 @@ screen-recording-to-PPT, and browser-based slide extraction tools.
 The package is pure functions, **zero dependencies**, and runs in the browser or
 in Node. Give it frames, get back the indices where a new slide begins.
 
-It is a **change detector**, not a complete converter: it does not decode video,
-capture clean export frames, remove non-consecutive duplicates, run OCR, or
-write PowerPoint files. Those stages belong in the surrounding pipeline.
+The library is a **change detector**, not a complete converter: it does not
+decode video, capture clean export frames, remove non-consecutive duplicates,
+run OCR, or write PowerPoint files. Those stages belong in the surrounding
+pipeline.
+
+The bundled **CLI** adds the first two by shelling out to `ffmpeg`, so you can
+go straight from a file to slide images without writing any code. `ffmpeg` is a
+binary you already have or install once — it never becomes an npm dependency,
+and the library stays dependency-free.
 
 This is the open core of **[Video2Any](https://video2any.com)** — a tool that
 turns videos, screen recordings, and meeting recordings into editable
@@ -41,6 +47,64 @@ never leave your machine).
 ```bash
 npm install video-slide-extractor
 ```
+
+Or skip the install and run the CLI:
+
+```bash
+npx video-slide-extractor lecture.mp4
+```
+
+## Command line
+
+```bash
+npx video-slide-extractor lecture.mp4
+```
+
+```
+lecture.mp4  1920x1080  01:04:12  sampling 1/s
+Calibrating against the footage…
+  threshold 0.0180 (bimodal), masking always-moving regions
+Detecting slides…
+  00:00:00  lecture-slides/slide-001.png
+  00:01:34  lecture-slides/slide-002.png
+  …
+46 slides from 3853 sampled frames → lecture-slides/
+```
+
+Requires `ffmpeg` and `ffprobe` on PATH (`brew install ffmpeg`,
+`sudo apt install ffmpeg`, or `winget install Gyan.FFmpeg`). The CLI tells you
+so, with the install line for your platform, if they are missing.
+
+What it does, in three passes, so memory stays flat whether the recording is
+three minutes or three hours:
+
+1. **Calibrate** — samples frames spread across the whole recording and runs
+   [`analyzeSamples`](#analyzesamplesframes-width-height-opts--mask-choice) to
+   pick a threshold and a webcam/cursor mask for *this* footage.
+2. **Detect** — streams every sampled frame through
+   [`createSlideDetector`](#createslidedetectorwidth-height-opts--frame--keep-ratio).
+   Nothing is retained.
+3. **Export** — seeks back to each kept slide and grabs it at **source
+   resolution**, from inside the slide's dwell rather than on the boundary, so
+   you get the slide itself and not the transition frame before it.
+
+| Option | Default | |
+| --- | --- | --- |
+| `-o, --out <dir>` | `<video-name>-slides` | output directory |
+| `--format <png\|jpg>` | `png` | image format |
+| `--fps <n>` | `1` | frames sampled per second |
+| `--width <px>` | `320` | detector working width |
+| `--changed-ratio <n>` | calibrated | override the detected threshold |
+| `--block-size <px>` | `8` | block edge at the working width |
+| `--block-delta <n>` | `14` | mean RGB delta for a block to count |
+| `--no-calibrate` | off | use fixed defaults instead of reading the footage |
+| `--dry-run` | off | detect and report, write no images |
+| `--json` | off | machine-readable result on stdout |
+| `-q, --quiet` | off | suppress progress |
+
+`--json` prints the source geometry, the settings calibration chose, and every
+slide with its index, timestamp, diff ratio, and output path — enough to drive
+a longer pipeline from a shell script.
 
 ## The idea
 
@@ -131,16 +195,16 @@ masks; see below). Full tables, scripts, and methodology:
 
 ## Capability boundary
 
-| Stage | This package | A complete converter still needs |
-| --- | --- | --- |
-| Decode/sample video | No | `<video>`/WebCodecs, FFmpeg, or another decoder |
-| Detect consecutive visual changes | Yes | Feed ordered, equally sized RGBA frames |
-| Ignore a webcam bubble / cursor / logo | Yes | Calibrate on a set of sample frames first |
-| Pick a threshold for this footage | Yes | Calibrate on a set of sample frames first |
-| Collapse fades/builds | No | Temporal post-processing |
-| Find a slide shown earlier | No | Global perceptual deduplication |
-| Capture export-quality images | No | Seek/recapture at source resolution |
-| Produce PPTX/PDF/OCR/notes | No | Document, OCR, and transcription layers |
+| Stage | Library | CLI | A complete converter still needs |
+| --- | --- | --- | --- |
+| Decode/sample video | No | Yes, via `ffmpeg` | `<video>`/WebCodecs, FFmpeg, or another decoder |
+| Detect consecutive visual changes | Yes | Yes | Feed ordered, equally sized RGBA frames |
+| Ignore a webcam bubble / cursor / logo | Yes | Yes | Calibrate on a set of sample frames first |
+| Pick a threshold for this footage | Yes | Yes | Calibrate on a set of sample frames first |
+| Collapse fades/builds | No | No | Temporal post-processing |
+| Find a slide shown earlier | No | No | Global perceptual deduplication |
+| Capture export-quality images | No | Yes, via `ffmpeg` | Seek/recapture at source resolution |
+| Produce PPTX/PDF/OCR/notes | No | No | Document, OCR, and transcription layers |
 
 This boundary matters when comparing "video to PowerPoint" tools: slide-change
 detection, original-slide recovery, and generating a new deck from a transcript
@@ -244,8 +308,9 @@ around it:
 - **Slide density control** — raising the threshold when a span is producing
   more slides than the caller asked for, without ever lowering it to reach a
   target (that would invent slides that are not there).
-- **Decode and sampling** — WebCodecs, seek strategy, and recapture at source
-  resolution for export-quality images.
+- **Decode and sampling in the browser** — the CLI covers this with `ffmpeg`,
+  which means a local binary and a temp-file round trip. The product does it
+  with WebCodecs and a smarter seek strategy, so nothing leaves the page.
 - **Export** to `.pptx`, PDF, image frames, and `.srt` subtitles — all in the
   browser.
 
