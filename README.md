@@ -22,6 +22,18 @@ turns videos, screen recordings, and meeting recordings into editable
 PowerPoint decks, PDFs, and subtitles, entirely in your browser (your files
 never leave your machine).
 
+![Six slides recovered from a 17-minute FOSDEM talk. A webcam bubble sits in
+the corner of every one of them and none of the six is a picture of it: a
+region that never stops moving is left out of the comparison, which is the
+difference between 39 slides and several hundred near-identical
+frames.](docs/real-output.png)
+
+*Six of the 39 slides this detector found in "Drones, Virtual Reality and
+Multiplayer NES Games with Pion WebRTC" (Sean DuBois, FOSDEM 2021, CC BY 2.0
+BE). Not evenly sampled — these are the six a person checked, the same set the
+[product page](https://video2any.com/tools/mp4-to-ppt) is willing to be judged
+on.*
+
 ## See it working
 
 - **Live demo** — drop any video into the
